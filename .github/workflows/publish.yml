@@ -1,0 +1,49 @@
+# Publishes n8n-nodes-webkio to npm on every version tag push, with an npm provenance statement.
+#
+# n8n requires community nodes submitted for verification to be published this way (GitHub Actions
+# with provenance, since May 2026). That is why this package lives in its own public GitHub repository
+# (https://github.com/Webkio-dev/n8n-nodes-webkio), mirrored from integrations/n8n in the Webkio monorepo.
+#
+# One-time setup: npm only lets a package that already exists trust a publisher, so the FIRST
+# release uses an npm granular token with publish rights, saved as the NPM_TOKEN repository secret.
+# After it, switch to npm Trusted Publishing (OIDC): on npmjs.com, package settings > Trusted
+# Publishers > GitHub Actions, workflow publish.yml - then delete the secret.
+#
+# Release, from the monorepo: bump the version in integrations/n8n/package.json and CHANGELOG.md,
+# commit, then `integrations/n8n/mirror.sh --release`. The tag it pushes runs this workflow; on
+# GitHub Actions `npm run release` only publishes (it never bumps or tags there).
+
+name: Publish
+
+on:
+  push:
+    tags:
+      - '*.*.*'
+
+jobs:
+  publish:
+    name: Publish to npm
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Release
+        run: |
+          [ -n "$NPM_TOKEN" ] && npm config set //registry.npmjs.org/:_authToken "$NPM_TOKEN"
+          npm run release
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

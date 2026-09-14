@@ -1,0 +1,18 @@
+{
+	"node": "n8n-nodes-webkio.webkio",
+	"nodeVersion": "1.0",
+	"codexVersion": "1.0",
+	"categories": ["Sales", "Marketing"],
+	"resources": {
+		"credentialDocumentation": [
+			{
+				"url": "https://developer.webkio.com/docs"
+			}
+		],
+		"primaryDocumentation": [
+			{
+				"url": "https://developer.webkio.com/docs"
+			}
+		]
+	}
+}
