@@ -4,6 +4,7 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const { compact } = require('../dist/nodes/Webkio/body');
+const { simplifyContact, simplifyOrder } = require('../dist/nodes/Webkio/simplify');
 
 let Webkio;
 try {
@@ -30,3 +31,14 @@ test('every operation names its action, and every write asks for a site', { skip
 	assert.strictEqual(site.required, true);
 	assert.deepStrictEqual(site.displayOptions.show.operation.sort(), ['add', 'create', 'upsert']);
 });
+
+test('Simplify keeps ten fields and flattens the order customer', () => {
+	const contact = simplifyContact({ id: 'C1', email: 'a@example.com', notes: 'long', first_seen_at: 'x', source: 'api' });
+	assert.strictEqual(Object.keys(contact).length, 10);
+	assert.strictEqual(contact.notes, undefined);
+	const order = simplifyOrder({ id: 'O1', number: 'ORD-1', customer: { name: 'Sofia', email: 's@example.com' }, items: [{}, {}] });
+	assert.strictEqual(Object.keys(order).length, 10);
+	assert.strictEqual(order.customer_email, 's@example.com');
+	assert.strictEqual(order.item_count, 2);
+});
+

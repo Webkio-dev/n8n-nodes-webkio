@@ -5,6 +5,8 @@ import {
 	type IHookFunctions,
 	type IHttpRequestMethods,
 	type ILoadOptionsFunctions,
+	type INodeListSearchItems,
+	type INodeListSearchResult,
 	type INodePropertyOptions,
 } from 'n8n-workflow';
 
@@ -71,4 +73,35 @@ export async function listOptions(
 		cursor = String(meta.next_cursor);
 	}
 	return options;
+}
+
+/**
+ * One page of a list for a resource locator's "From List" mode, newest first. The API matches an email
+ * exactly, so a search containing "@" asks for that email; any other search filters the page by name.
+ */
+export async function searchList(
+	this: ILoadOptionsFunctions,
+	path: string,
+	filter: string | undefined,
+	paginationToken: string | undefined,
+	toItem: (item: IDataObject) => INodeListSearchItems,
+): Promise<INodeListSearchResult> {
+	const term = (filter ?? '').trim();
+	const qs: IDataObject = { limit: 100 };
+	if (term.includes('@')) {
+		qs.email = term;
+	}
+	if (paginationToken) {
+		qs.cursor = paginationToken;
+	}
+	const { status, body } = await webkioRequest.call(this, 'GET', path, { qs });
+	if (status >= 400) {
+		throw apiError.call(this, body, 'Could not load the list from Webkio');
+	}
+	const needle = term.toLowerCase();
+	const results = ((body.data as IDataObject[]) ?? [])
+		.map(toItem)
+		.filter((item) => term.includes('@') || needle === '' || item.name.toLowerCase().includes(needle));
+	const meta = (body.meta ?? {}) as IDataObject;
+	return { results, paginationToken: meta.has_more && meta.next_cursor ? String(meta.next_cursor) : undefined };
 }

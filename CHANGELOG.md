@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0
+
+- Contact and order are chosen from a searchable list (or entered by ID).
+- Simplify option, on by default, for getting contacts and orders: the ten most used fields.
+- Operation names and descriptions follow n8n's UX guidelines.
+
 ## 0.2.0
 
 - Webkio node: create or update a contact, get contacts, add a subscriber (optionally to a list),

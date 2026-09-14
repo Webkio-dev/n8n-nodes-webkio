@@ -6,12 +6,14 @@ import {
 	type IHttpRequestMethods,
 	type ILoadOptionsFunctions,
 	type INodeExecutionData,
+	type INodeListSearchResult,
 	type INodePropertyOptions,
 	type INodeType,
 	type INodeTypeDescription,
 } from 'n8n-workflow';
 import { compact } from './body';
-import { apiError, listOptions, webkioRequest } from './GenericFunctions';
+import { apiError, listOptions, searchList, webkioRequest } from './GenericFunctions';
+import { simplifyContact, simplifyOrder } from './simplify';
 
 /** Where each "Get Many" reads from. */
 const LIST_PATHS: Record<string, string> = {
@@ -64,6 +66,14 @@ async function getMany(this: IExecuteFunctions, path: string, qs: IDataObject, i
 	return results.slice(0, limit);
 }
 
+/** Contacts and orders cut to their ten most used fields when Simplify is on. */
+function simplified(this: IExecuteFunctions, resource: string, rows: IDataObject[], i: number): IDataObject[] {
+	if (!['contact', 'order'].includes(resource) || !(this.getNodeParameter('simplify', i, true) as boolean)) {
+		return rows;
+	}
+	return rows.map((row) => (resource === 'contact' ? simplifyContact(row) : simplifyOrder(row)) as IDataObject);
+}
+
 async function run(this: IExecuteFunctions, resource: string, operation: string, i: number): Promise<IDataObject[]> {
 	if (operation === 'getAll' && LIST_PATHS[resource]) {
 		const filters = this.getNodeParameter('filters', i, {}) as IDataObject;
@@ -73,7 +83,8 @@ async function run(this: IExecuteFunctions, resource: string, operation: string,
 			number: filters.number,
 			status: filters.status,
 		}) as IDataObject;
-		return getMany.call(this, LIST_PATHS[resource], qs, i);
+		const rows = await getMany.call(this, LIST_PATHS[resource], qs, i);
+		return simplified.call(this, resource, rows, i);
 	}
 
 	if (resource === 'contact' && operation === 'upsert') {
@@ -86,12 +97,12 @@ async function run(this: IExecuteFunctions, resource: string, operation: string,
 		];
 	}
 	if (resource === 'contact' && operation === 'get') {
-		const id = this.getNodeParameter('contactId', i) as string;
-		return [await send.call(this, 'GET', `/contacts/${encodeURIComponent(id)}`, i)];
+		const id = this.getNodeParameter('contactId', i, '', { extractValue: true }) as string;
+		return simplified.call(this, resource, [await send.call(this, 'GET', `/contacts/${encodeURIComponent(id)}`, i)], i);
 	}
 	if (resource === 'order' && operation === 'get') {
-		const id = this.getNodeParameter('orderId', i) as string;
-		return [await send.call(this, 'GET', `/orders/${encodeURIComponent(id)}`, i)];
+		const id = this.getNodeParameter('orderId', i, '', { extractValue: true }) as string;
+		return simplified.call(this, resource, [await send.call(this, 'GET', `/orders/${encodeURIComponent(id)}`, i)], i);
 	}
 	if (resource === 'subscriber' && operation === 'add') {
 		const extra = this.getNodeParameter('additionalFields', i, {}) as IDataObject;
@@ -170,8 +181,8 @@ export class Webkio implements INodeType {
 					{
 						name: 'Create Draft',
 						value: 'create',
-						description: 'Create a blog post as a draft, to publish from Webkio',
-						action: 'Create a blog post draft',
+						description: 'Create a new blog post as a draft, to publish from Webkio',
+						action: 'Create blog post draft',
 					},
 				],
 				default: 'create',
@@ -187,13 +198,13 @@ export class Webkio implements INodeType {
 						name: 'Create or Update',
 						value: 'upsert',
 						description: 'Create a new record, or update the current one if it already exists (upsert)',
-						action: 'Create or update a contact',
+						action: 'Create or update contact',
 					},
-					{ name: 'Get', value: 'get', description: 'Get a contact by ID', action: 'Get a contact' },
+					{ name: 'Get', value: 'get', description: 'Retrieve a contact', action: 'Get contact' },
 					{
 						name: 'Get Many',
 						value: 'getAll',
-						description: 'Get contacts, on one site or by email',
+						description: 'Retrieve a list of contacts, on one site or by email',
 						action: 'Get many contacts',
 					},
 				],
@@ -206,7 +217,7 @@ export class Webkio implements INodeType {
 				noDataExpression: true,
 				displayOptions: { show: { resource: ['emailList'] } },
 				options: [
-					{ name: 'Get Many', value: 'getAll', description: 'Get your email lists', action: 'Get many email lists' },
+					{ name: 'Get Many', value: 'getAll', description: 'Retrieve a list of email lists', action: 'Get many email lists' },
 				],
 				default: 'getAll',
 			},
@@ -217,11 +228,11 @@ export class Webkio implements INodeType {
 				noDataExpression: true,
 				displayOptions: { show: { resource: ['order'] } },
 				options: [
-					{ name: 'Get', value: 'get', description: 'Get an order by ID', action: 'Get an order' },
+					{ name: 'Get', value: 'get', description: 'Retrieve an order', action: 'Get order' },
 					{
 						name: 'Get Many',
 						value: 'getAll',
-						description: 'Find orders by number, customer email, status or site',
+						description: 'Retrieve a list of orders, by number, customer email, status or site',
 						action: 'Get many orders',
 					},
 				],
@@ -237,8 +248,8 @@ export class Webkio implements INodeType {
 					{
 						name: 'Add',
 						value: 'add',
-						description: "Add someone to a site's email subscribers",
-						action: 'Add a subscriber',
+						description: "Add a subscriber to a site's email list",
+						action: 'Add subscriber',
 					},
 				],
 				default: 'add',
@@ -286,20 +297,48 @@ export class Webkio implements INodeType {
 				displayOptions: { show: { resource: ['blogPost'], operation: ['create'] } },
 			},
 			{
-				displayName: 'Contact ID',
+				displayName: 'Contact',
 				name: 'contactId',
-				type: 'string',
+				type: 'resourceLocator',
 				required: true,
-				default: '',
+				default: { mode: 'list', value: '' },
+				modes: [
+					{
+						displayName: 'From List',
+						name: 'list',
+						type: 'list',
+						placeholder: 'Select a contact...',
+						typeOptions: { searchListMethod: 'searchContacts', searchable: true },
+					},
+					{ displayName: 'By ID', name: 'id', type: 'string', placeholder: 'e.g. Ct12AbCd' },
+				],
 				displayOptions: { show: { resource: ['contact'], operation: ['get'] } },
 			},
 			{
-				displayName: 'Order ID',
+				displayName: 'Order',
 				name: 'orderId',
-				type: 'string',
+				type: 'resourceLocator',
 				required: true,
-				default: '',
+				default: { mode: 'list', value: '' },
+				modes: [
+					{
+						displayName: 'From List',
+						name: 'list',
+						type: 'list',
+						placeholder: 'Select an order...',
+						typeOptions: { searchListMethod: 'searchOrders', searchable: true },
+					},
+					{ displayName: 'By ID', name: 'id', type: 'string', placeholder: 'e.g. Or12AbCd' },
+				],
 				displayOptions: { show: { resource: ['order'], operation: ['get'] } },
+			},
+			{
+				displayName: 'Simplify',
+				name: 'simplify',
+				type: 'boolean',
+				default: true,
+				description: 'Whether to return a simplified version of the response instead of the raw data',
+				displayOptions: { show: { resource: ['contact', 'order'], operation: ['get', 'getAll'] } },
 			},
 			{
 				displayName: 'Additional Fields',
@@ -496,6 +535,21 @@ export class Webkio implements INodeType {
 	};
 
 	methods = {
+		listSearch: {
+			async searchContacts(this: ILoadOptionsFunctions, filter?: string, paginationToken?: string): Promise<INodeListSearchResult> {
+				return searchList.call(this, '/contacts', filter, paginationToken, (c) => ({
+					name: c.name ? `${String(c.name)} (${String(c.email ?? '')})` : String(c.email ?? c.id),
+					value: String(c.id),
+				}));
+			},
+			async searchOrders(this: ILoadOptionsFunctions, filter?: string, paginationToken?: string): Promise<INodeListSearchResult> {
+				return searchList.call(this, '/orders', filter, paginationToken, (o) => {
+					const customer = (o.customer ?? {}) as IDataObject;
+					const who = customer.name ?? customer.email;
+					return { name: who ? `${String(o.number)} - ${String(who)}` : String(o.number), value: String(o.id) };
+				});
+			},
+		},
 		loadOptions: {
 			async getSites(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				return listOptions.call(this, '/projects');

@@ -1,6 +1,6 @@
 {
 	"name": "n8n-nodes-webkio",
-	"version": "0.2.0",
+	"version": "0.3.0",
 	"description": "n8n nodes for Webkio: start workflows on new orders, bookings, reservations and more, and add contacts, subscribers and blog drafts or find contacts and orders.",
 	"license": "MIT",
 	"homepage": "https://developer.webkio.com",

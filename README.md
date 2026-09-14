@@ -35,6 +35,18 @@ Each item carries the record's fields at the top level (its id as `record_id`), 
 Blank fields are not sent, and the API leaves what is stored alone for any field it does not get.
 Contacts need a Webkio plan with the CRM. Adding someone who unsubscribed leaves them unsubscribed.
 
+## Example workflows
+
+- **Paid order to contact**: Webkio Trigger (Order Paid), then Webkio (Contact: Create or Update) with the
+  order's customer email and name, and the tag `customer`.
+- **Sign-up from another tool**: a form or checkout tool, then Webkio (Subscriber: Add) with the site and an
+  email list, so they get your welcome email.
+- **Order status for support**: a helpdesk message, then Webkio (Order: Get Many, filtered by Order Number),
+  then a reply with the order's `status`.
+- **Blog drafts**: an AI or document step, then Webkio (Blog Post: Create Draft). Review and publish it in Webkio.
+
+Getting contacts and orders returns ten common fields by default; turn off **Simplify** for every field.
+
 ## Credentials
 
 Create an API key in Webkio under **Settings > API & webhooks**, or in the
