@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1
+
+- New icon: the Webkio shield, in light and dark versions, matching the Zapier and Make apps.
+
 ## 0.3.0
 
 - Contact and order are chosen from a searchable list (or entered by ID).

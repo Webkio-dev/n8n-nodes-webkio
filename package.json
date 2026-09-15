@@ -1,59 +1,59 @@
 {
-	"name": "n8n-nodes-webkio",
-	"version": "0.3.0",
-	"description": "n8n nodes for Webkio: start workflows on new orders, bookings, reservations and more, and add contacts, subscribers and blog drafts or find contacts and orders.",
-	"license": "MIT",
-	"homepage": "https://developer.webkio.com",
-	"keywords": [
-		"n8n-community-node-package",
-		"webkio",
-		"website builder",
-		"webhooks"
-	],
-	"author": {
-		"name": "Webkio",
-		"email": "contact@webkio.com"
-	},
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/Webkio-dev/n8n-nodes-webkio.git"
-	},
-	"scripts": {
-		"build": "n8n-node build",
-		"build:watch": "tsc --watch",
-		"dev": "n8n-node dev",
-		"lint": "n8n-node lint",
-		"lint:fix": "n8n-node lint --fix",
-		"test": "n8n-node build && node --test test/signature.test.js test/actions.test.js",
-		"release": "n8n-node release",
-		"prepublishOnly": "n8n-node prerelease"
-	},
-	"files": [
-		"dist",
-		"!dist/tsconfig.tsbuildinfo"
-	],
-	"publishConfig": {
-		"access": "public"
-	},
-	"n8n": {
-		"n8nNodesApiVersion": 1,
-		"strict": true,
-		"credentials": [
-			"dist/credentials/WebkioApi.credentials.js"
-		],
-		"nodes": [
-			"dist/nodes/Webkio/Webkio.node.js",
-			"dist/nodes/WebkioTrigger/WebkioTrigger.node.js"
-		]
-	},
-	"devDependencies": {
-		"@n8n/node-cli": "0.47.2",
-		"eslint": "9.32.0",
-		"prettier": "3.6.2",
-		"release-it": "^19.0.4",
-		"typescript": "5.9.2"
-	},
-	"peerDependencies": {
-		"n8n-workflow": "*"
-	}
+  "name": "n8n-nodes-webkio",
+  "version": "0.3.1",
+  "description": "n8n nodes for Webkio: start workflows on new orders, bookings, reservations and more, and add contacts, subscribers and blog drafts or find contacts and orders.",
+  "license": "MIT",
+  "homepage": "https://developer.webkio.com",
+  "keywords": [
+    "n8n-community-node-package",
+    "webkio",
+    "website builder",
+    "webhooks"
+  ],
+  "author": {
+    "name": "Webkio",
+    "email": "contact@webkio.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Webkio-dev/n8n-nodes-webkio.git"
+  },
+  "scripts": {
+    "build": "n8n-node build",
+    "build:watch": "tsc --watch",
+    "dev": "n8n-node dev",
+    "lint": "n8n-node lint",
+    "lint:fix": "n8n-node lint --fix",
+    "test": "n8n-node build && node --test test/signature.test.js test/actions.test.js",
+    "release": "n8n-node release",
+    "prepublishOnly": "n8n-node prerelease"
+  },
+  "files": [
+    "dist",
+    "!dist/tsconfig.tsbuildinfo"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "strict": true,
+    "credentials": [
+      "dist/credentials/WebkioApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/Webkio/Webkio.node.js",
+      "dist/nodes/WebkioTrigger/WebkioTrigger.node.js"
+    ]
+  },
+  "devDependencies": {
+    "@n8n/node-cli": "0.47.2",
+    "eslint": "9.32.0",
+    "prettier": "3.6.2",
+    "release-it": "^19.0.4",
+    "typescript": "5.9.2"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
 }
