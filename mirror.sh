@@ -57,34 +57,6 @@ fi
 TREE="$(git rev-parse "HEAD:$PREFIX")"
 VERSION="$(git show "HEAD:$PREFIX/package.json" | node -p "JSON.parse(require('fs').readFileSync(0, 'utf8')).version")"
 
-# REACH THE REMOTE BEFORE BUILDING ANYTHING, and say which failure it was.
-#
-# The fetch below used to be the only contact, with its errors sent to /dev/null and its failure
-# treated as "main does not exist yet". That conflated two very different situations: a repository
-# without a main branch (fine - the next commit is the first one) and a repository we cannot read at
-# all (not fine). On a runner with no key the second one happened, so the script built a PARENTLESS
-# commit and pushed it - which a populated main refuses as a non-fast-forward. The visible error was
-# about the push, three lines after the real one, and in --reset mode it would have force-pushed a
-# one-commit history over the mirror instead.
-git ls-remote --exit-code "$REMOTE" >/dev/null 2>&1 && STATUS=0 || STATUS=$?
-if [ "$STATUS" != 0 ]; then
-  # 2 is git's "the remote answered, it just has no refs" - a first push, not a failure.
-  if [ "$STATUS" = 2 ]; then
-    echo "== $REMOTE is reachable but empty - this push creates its history."
-  else
-    cat >&2 <<MSG
-Cannot read $REMOTE over SSH.
-
-On a laptop: the deploy key belongs at $KEY, or export GIT_SSH_COMMAND yourself.
-In CI: set the repository variable N8N_MIRROR_KEY (secured) to the base64 of a private deploy key
-with WRITE access to that repository - the pipeline step writes it to $KEY before calling this.
-  base64 -w0 ~/.ssh/webkio_n8n_mirror
-Alternatively add the pipeline's own public key to the repository as a deploy key with write access.
-MSG
-    exit 1
-  fi
-fi
-
 PARENT=""
 if [ "$RESET" = 0 ] && git fetch -q "$REMOTE" main 2>/dev/null; then
   PARENT="$(git rev-parse FETCH_HEAD)"
