@@ -2,7 +2,7 @@
 	"node": "n8n-nodes-webkio.webkio",
 	"nodeVersion": "1.0",
 	"codexVersion": "1.0",
-	"categories": ["Sales", "Marketing"],
+	"categories": ["Sales", "Marketing & Content"],
 	"resources": {
 		"credentialDocumentation": [
 			{

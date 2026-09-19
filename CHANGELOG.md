@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.2
+
+- Codex category is now "Marketing & Content" on both nodes. "Marketing" is not one of the
+  categories the n8n UI accepts, so it was being dropped silently and the nodes showed under Sales
+  alone. Flagged in n8n's community-node review.
+
 ## 0.3.1
 
 - New icon: the Webkio shield, in light and dark versions, matching the Zapier and Make apps.

@@ -2,9 +2,16 @@
 #
 # Push integrations/n8n to its public GitHub repository, which is where npm publishes it from.
 #
-#   ./mirror.sh              # update the mirror's main branch
-#   ./mirror.sh --release    # ...and tag the package.json version, so GitHub Actions publishes it
-#   ./mirror.sh --reset      # replace the mirror's whole history with one commit (rewrites main)
+#   ./mirror.sh                    # update the mirror's main branch
+#   ./mirror.sh --release          # ...and tag the package.json version, so GitHub Actions publishes it
+#   ./mirror.sh --release-if-new   # ...tag ONLY when that version has no tag yet (what CI runs)
+#   ./mirror.sh --reset            # replace the mirror's whole history with one commit (rewrites main)
+#
+# --release-if-new is the unattended form. `--release` is deliberately loud about an existing tag -
+# run by hand, forgetting the version bump is the mistake worth stopping. Run on every push to
+# master, that same check would fail the pipeline for every change that was not a release, so CI
+# asks the softer question: is there a tag for this version yet? No tag, publish it; tag already
+# there, the content is mirrored and nothing is published.
 #
 # n8n only verifies community nodes published from GitHub Actions with npm provenance, and this
 # folder lives in the Bitbucket monorepo, so the GitHub repository is a mirror. It gets SNAPSHOTS,
@@ -31,9 +38,11 @@ fi
 
 RELEASE=0
 RESET=0
+IF_NEW=0
 for arg in "$@"; do
   case "$arg" in
     --release) RELEASE=1 ;;
+    --release-if-new) RELEASE=1; IF_NEW=1 ;;
     --reset) RESET=1 ;;
     *) echo "Unknown option: $arg" >&2; exit 2 ;;
   esac
@@ -68,6 +77,10 @@ fi
 
 if [ "$RELEASE" = 1 ]; then
   if git ls-remote --tags "$REMOTE" "refs/tags/$VERSION" | grep -q . && [ "$RESET" = 0 ]; then
+    if [ "$IF_NEW" = 1 ]; then
+      echo "== $VERSION is already tagged: mirrored the contents, published nothing."
+      exit 0
+    fi
     echo "Tag $VERSION already exists on the mirror. Bump the version in $PREFIX/package.json (and CHANGELOG.md) first." >&2
     exit 1
   fi
